@@ -1,394 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>typosquat // domain finder</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0a0e0f;
-    --surface: #11161a;
-    --border: #1c2529;
-    --text: #d7e3e0;
-    --text-dim: #66807c;
-    --green: #2ee676;
-    --amber: #ffb454;
-    --red: #ff5c5c;
-    --blue: #5cc8ff;
-  }
+{% extends "base.html" %}
+{% block title %}typosquat // domain finder{% endblock %}
 
-  * { box-sizing: border-box; }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
-  }
-
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    line-height: 1.5;
-  }
-
-  .wrap {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 56px 24px 80px;
-  }
-
-  /* Header */
-  .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 6px;
-  }
-  .brand .dot {
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-  }
-  .brand h1 {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 19px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0;
-    color: var(--text);
-  }
-  .brand h1 span { color: var(--text-dim); font-weight: 400; }
-
-  .tagline {
-    color: var(--text-dim);
-    font-size: 14.5px;
-    margin: 0 0 28px;
-    max-width: 540px;
-  }
-
-  /* Explainer card */
-  .explainer {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
-    margin-bottom: 32px;
-  }
-  .explainer summary {
-    cursor: pointer;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--blue);
-    list-style: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .explainer summary::-webkit-details-marker { display: none; }
-  .explainer summary::before {
-    content: "?";
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    border: 1px solid var(--blue);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-  }
-  .explainer[open] summary::before { content: "–"; }
-  .explainer-body {
-    margin-top: 14px;
-    font-size: 13.5px;
-    color: var(--text-dim);
-  }
-  .explainer-body p { margin: 0 0 10px; }
-  .explainer-body p:last-child { margin-bottom: 0; }
-  .explainer-body code {
-    background: rgba(255,255,255,0.06);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--text);
-    font-size: 12.5px;
-  }
-
-  /* Terminal-style input */
-  .scan-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 12px;
-  }
-  .scan-line {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-  }
-  .prompt {
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--green);
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  .scan-line input[type="text"] {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
-    min-width: 0;
-  }
-  .scan-line input[type="text"]::placeholder { color: var(--text-dim); }
-
-  .scan-line button {
-    font-family: 'JetBrains Mono', monospace;
-    background: var(--green);
-    color: #06120a;
-    border: none;
-    font-weight: 700;
-    font-size: 13.5px;
-    padding: 9px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-  }
-  .scan-line button:hover { filter: brightness(1.08); }
-  .scan-line button:disabled { opacity: 0.6; cursor: default; }
-  .scan-line button:focus-visible,
-  .scan-line input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-
-  .hint {
-    color: var(--text-dim);
-    font-size: 12.5px;
-    margin: 0 0 44px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .error {
-    color: var(--red);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    margin: -4px 0 32px;
-  }
-
-  /* Stats row */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .stat {
-    background: var(--surface);
-    padding: 18px 20px;
-  }
-  .stat .num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .stat .label {
-    color: var(--text-dim);
-    font-size: 12px;
-    margin-top: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .stat.high .num { color: var(--red); }
-
-  /* Risk distribution bar */
-  .risk-bar-wrap {
-    margin-bottom: 36px;
-  }
-  .risk-bar {
-    display: flex;
-    height: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    background: var(--border);
-    margin-bottom: 10px;
-  }
-  .risk-bar .seg { height: 100%; }
-  .risk-bar .seg.high { background: var(--red); }
-  .risk-bar .seg.medium { background: var(--amber); }
-  .risk-bar .seg.low { background: var(--green); }
-  .risk-bar .seg.none { background: var(--text-dim); opacity: 0.4; }
-  .risk-legend {
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-    font-size: 11.5px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--text-dim);
-  }
-  .risk-legend .item { display: flex; align-items: center; gap: 6px; }
-  .risk-legend .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-  .risk-legend .sw.high { background: var(--red); }
-  .risk-legend .sw.medium { background: var(--amber); }
-  .risk-legend .sw.low { background: var(--green); }
-  .risk-legend .sw.none { background: var(--text-dim); opacity: 0.5; }
-
-  /* Results log */
-  .log-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 14px;
-  }
-  .log-header h2 {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 0;
-    font-weight: 500;
-  }
-
-  .row {
-    display: grid;
-    grid-template-columns: 28px 1fr 90px 130px 1fr;
-    gap: 14px;
-    align-items: center;
-    padding: 13px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--text-dim);
-    border-radius: 6px;
-    margin-bottom: 6px;
-    font-size: 13.5px;
-  }
-  .row.risk-high { border-left-color: var(--red); }
-  .row.risk-medium { border-left-color: var(--amber); }
-  .row.risk-low { border-left-color: var(--green); }
-  .row.risk-none { opacity: 0.45; }
-
-  .row .icon { font-family: 'JetBrains Mono', monospace; text-align: center; }
-  .row .domain {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 500;
-    overflow-wrap: anywhere;
-  }
-  .row .age { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
-  .row .badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
-    text-align: center;
-    letter-spacing: 0.02em;
-  }
-  .row.risk-high .badge { background: rgba(255,92,92,0.15); color: var(--red); }
-  .row.risk-medium .badge { background: rgba(255,180,84,0.15); color: var(--amber); }
-  .row.risk-low .badge { background: rgba(46,230,118,0.12); color: var(--green); }
-  .row.risk-none .badge { background: transparent; color: var(--text-dim); }
-  .row .detail { color: var(--text-dim); font-size: 12.5px; }
-
-  .row-head {
-    display: grid;
-    grid-template-columns: 28px 1fr 90px 130px 1fr;
-    gap: 14px;
-    padding: 0 16px;
-    color: var(--text-dim);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .empty {
-    text-align: center;
-    padding: 40px 0;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-  }
-
-  footer {
-    margin-top: 56px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* Loading overlay */
-  #loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(10,14,15,0.97);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  #loading-overlay.active { display: flex; }
-  .loading-box { text-align: center; max-width: 360px; padding: 0 20px; }
-  .spinner {
-    width: 34px; height: 34px;
-    border: 3px solid var(--border);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    margin: 0 auto 22px;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-step {
-    color: var(--text);
-    font-size: 13.5px;
-    min-height: 20px;
-    margin-bottom: 8px;
-  }
-  .loading-sub {
-    color: var(--text-dim);
-    font-size: 11.5px;
-  }
-  .loading-cursor {
-    display: inline-block;
-    width: 7px; height: 13px;
-    background: var(--green);
-    margin-left: 2px;
-    animation: blink 1s step-end infinite;
-    vertical-align: middle;
-  }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  @media (max-width: 600px) {
-    .row, .row-head { grid-template-columns: 20px 1fr 70px; }
-    .row .age, .row-head .age-h, .row .detail, .row-head .detail-h { display: none; }
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <div class="brand">
-    <span class="dot"></span>
-    <h1>typosquat<span>// domain finder</span></h1>
-  </div>
+{% block content %}
+  <h1 class="page-title">Domain Scanner</h1>
   <p class="tagline">Enter a domain. We generate likely typo-squatted lookalikes and check which ones are actually registered, live, and how recently they were created.</p>
 
   <details class="explainer">
     <summary>What is typosquatting, and how does this work?</summary>
     <div class="explainer-body">
-      <p><strong>Typosquatting</strong> is when attackers register domains that look almost identical to a real one — like <code>amaz0n.com</code> instead of <code>amazon.com</code> — hoping people mistype a URL or don't look closely. These lookalikes are often used for phishing or malware.</p>
-      <p>This tool generates dozens of likely typo variants of the domain you enter (letter swaps, drops, lookalike characters, hyphens, alternate extensions), then checks which ones are actually registered and live, and how recently each was created. A domain registered very recently is generally more suspicious than one that's been live for years.</p>
+      <p><strong>Typosquatting</strong> is when attackers register domains that look almost identical to a real one — like <span class="ex">amaz0n.com</span> instead of <span class="ex">amazon.com</span> — hoping people mistype a URL or don't look closely. These lookalikes are often used for phishing or malware.</p>
+      <div class="steps">
+        <div class="step">
+          <span class="step-n">01</span>
+          <div>
+            <div class="step-t">Generate variants</div>
+            <div class="step-d">Common typo patterns are applied — swapped letters, missing letters, lookalike characters (0 for o), hyphens, and alternate extensions.</div>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-n">02</span>
+          <div>
+            <div class="step-t">Check which ones exist</div>
+            <div class="step-d">Each variant is checked via DNS to see if it's actually a live, registered domain.</div>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-n">03</span>
+          <div>
+            <div class="step-t">Score the risk</div>
+            <div class="step-d">A WHOIS lookup checks how recently each registered variant was created — newer is generally more suspicious.</div>
+          </div>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -438,16 +81,10 @@
     </div>
   </div>
 
-  <div class="log-header">
-    <h2>scan results — {{ target_domain }}</h2>
-  </div>
+  <div class="log-header"><h2>scan results — {{ target_domain }}</h2></div>
 
   <div class="row-head">
-    <span></span>
-    <span>domain</span>
-    <span class="age-h">age</span>
-    <span>risk</span>
-    <span class="detail-h">registrar</span>
+    <span></span><span>domain</span><span class="age-h">age</span><span>risk</span><span class="detail-h">registrar</span>
   </div>
 
   {% for r in results %}
@@ -467,10 +104,9 @@
     <div class="empty">no variants generated</div>
   {% endfor %}
   {% endif %}
+{% endblock %}
 
-  <footer>built for cybersecurity internship project — typosquatting detection tool</footer>
-</div>
-
+{% block extra_body %}
 <div id="loading-overlay">
   <div class="loading-box">
     <div class="spinner"></div>
@@ -484,22 +120,14 @@
   const overlay = document.getElementById('loading-overlay');
   const btn = document.getElementById('scan-btn');
   const stepEl = document.getElementById('loading-step');
-
-  const steps = [
-    "Generating typo variants",
-    "Resolving DNS records",
-    "Querying WHOIS registries",
-    "Scoring risk levels"
-  ];
+  const steps = ["Generating typo variants", "Resolving DNS records", "Querying WHOIS registries", "Scoring risk levels"];
 
   form.addEventListener('submit', function (e) {
     const input = form.querySelector('input[name="domain"]');
     if (!input.value.trim()) return;
-
     overlay.classList.add('active');
     btn.disabled = true;
     btn.textContent = "scanning...";
-
     let i = 0;
     stepEl.innerHTML = steps[0] + '<span class="loading-cursor"></span>';
     setInterval(function () {
@@ -508,5 +136,4 @@
     }, 1800);
   });
 </script>
-</body>
-</html>
+{% endblock %}

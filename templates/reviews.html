@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}reviews // typosquat finder{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Reviews</h1>
+  <p class="tagline">
+    {% if avg_rating %}
+      Average rating: <strong style="color:var(--amber)">{{ avg_rating }} / 5</strong> from {{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }}.
+    {% else %}
+      Be the first to leave feedback on this tool.
+    {% endif %}
+  </p>
+
+  {% if error %}<p class="error">✕ {{ error }}</p>{% endif %}
+  {% if success %}<p class="success">✓ {{ success }}</p>{% endif %}
+
+  <form method="POST" action="/reviews" class="review-form">
+    <label class="field-label" for="name">Your name</label>
+    <input type="text" id="name" name="name" placeholder="e.g. Sahil" maxlength="60" required>
+
+    <label class="field-label">Rating</label>
+    <div class="star-rating">
+      <input type="radio" id="star5" name="rating" value="5"><label for="star5" title="5 stars">★</label>
+      <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars">★</label>
+      <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars">★</label>
+      <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars">★</label>
+      <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star">★</label>
+    </div>
+
+    <label class="field-label" for="comment">Your feedback</label>
+    <textarea id="comment" name="comment" placeholder="What did you think of the scanner?" maxlength="500" required></textarea>
+
+    <button type="submit" class="btn">post review</button>
+  </form>
+
+  <div class="log-header"><h2>{{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }}</h2></div>
+
+  {% for r in reviews %}
+    <div class="review-card">
+      <div class="review-card-head">
+        <span class="review-name">{{ r.name }}</span>
+        <span class="review-date">{{ r.created_at }}</span>
+      </div>
+      <div class="review-stars">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</div>
+      <div class="review-text" style="margin-top:8px;">{{ r.comment }}</div>
+    </div>
+  {% else %}
+    <div class="empty">no reviews yet — be the first</div>
+  {% endfor %}
+{% endblock %}

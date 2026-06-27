@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}typosquat // domain finder{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e0f;
+    --surface: #11161a;
+    --surface-2: #161c20;
+    --border: #1c2529;
+    --text: #d7e3e0;
+    --text-dim: #66807c;
+    --green: #2ee676;
+    --amber: #ffb454;
+    --red: #ff5c5c;
+    --blue: #5cc8ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* Top navigation */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10,14,15,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topnav-inner {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+  }
+  .nav-brand .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 7px var(--green);
+  }
+  .nav-brand .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .nav-brand .name span { color: var(--text-dim); font-weight: 400; }
+  .nav-links {
+    display: flex;
+    gap: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .nav-links a {
+    color: var(--text-dim);
+    padding: 5px 0;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active { color: var(--green); border-bottom-color: var(--green); }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 44px 24px 80px;
+  }
+
+  /* Header */
+  .tagline {
+    color: var(--text-dim);
+    font-size: 14.5px;
+    margin: 0 0 28px;
+    max-width: 560px;
+  }
+  .page-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Explainer card */
+  .explainer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 32px;
+  }
+  .explainer summary {
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .explainer summary::-webkit-details-marker { display: none; }
+  .explainer summary::before {
+    content: "?";
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .explainer[open] summary::before { content: "\2013"; }
+  .explainer-body {
+    margin-top: 14px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+  }
+  .explainer-body p { margin: 0 0 10px; }
+  .explainer-body p:last-child { margin-bottom: 0; }
+  .explainer-body .ex {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    font-size: 12.5px;
+  }
+  .steps { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .step { display: flex; gap: 14px; }
+  .step-n {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+  .step-t { color: var(--text); font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .step-d { color: var(--text-dim); font-size: 12.5px; }
+
+  /* Terminal-style input */
+  .scan-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 12px;
+  }
+  .scan-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .prompt {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--green);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .scan-line input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    min-width: 0;
+  }
+  .scan-line input[type="text"]::placeholder { color: var(--text-dim); }
+
+  .scan-line button, .btn {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--green);
+    color: #06120a;
+    border: none;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .scan-line button:hover, .btn:hover { filter: brightness(1.08); }
+  .scan-line button:disabled { opacity: 0.6; cursor: default; }
+  .scan-line button:focus-visible, .btn:focus-visible,
+  .scan-line input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .hint {
+    color: var(--text-dim);
+    font-size: 12.5px;
+    margin: 0 0 44px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .error {
+    color: var(--red);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    margin: -4px 0 32px;
+  }
+  .success {
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+    margin: -4px 0 24px;
+    padding: 10px 14px;
+    background: rgba(46,230,118,0.08);
+    border: 1px solid rgba(46,230,118,0.25);
+    border-radius: 8px;
+  }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--surface);
+    padding: 18px 20px;
+  }
+  .stat .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat .label {
+    color: var(--text-dim);
+    font-size: 12px;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .stat.high .num { color: var(--red); }
+
+  /* Risk distribution bar */
+  .risk-bar-wrap { margin-bottom: 36px; }
+  .risk-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border);
+    margin-bottom: 10px;
+  }
+  .risk-bar .seg { height: 100%; }
+  .risk-bar .seg.high { background: var(--red); }
+  .risk-bar .seg.medium { background: var(--amber); }
+  .risk-bar .seg.low { background: var(--green); }
+  .risk-bar .seg.none { background: var(--text-dim); opacity: 0.4; }
+  .risk-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+  .risk-legend .item { display: flex; align-items: center; gap: 6px; }
+  .risk-legend .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .risk-legend .sw.high { background: var(--red); }
+  .risk-legend .sw.medium { background: var(--amber); }
+  .risk-legend .sw.low { background: var(--green); }
+  .risk-legend .sw.none { background: var(--text-dim); opacity: 0.5; }
+
+  /* Results log */
+  .log-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .log-header h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 28px 1fr 90px 130px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--text-dim);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+  }
+  .row.risk-high { border-left-color: var(--red); }
+  .row.risk-medium { border-left-color: var(--amber); }
+  .row.risk-low { border-left-color: var(--green); }
+  .row.risk-none { opacity: 0.45; }
+
+  .row .icon { font-family: 'JetBrains Mono', monospace; text-align: center; }
+  .row .domain { font-family: 'JetBrains Mono', monospace; font-weight: 500; overflow-wrap: anywhere; }
+  .row .age { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+  .row .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .row.risk-high .badge { background: rgba(255,92,92,0.15); color: var(--red); }
+  .row.risk-medium .badge { background: rgba(255,180,84,0.15); color: var(--amber); }
+  .row.risk-low .badge { background: rgba(46,230,118,0.12); color: var(--green); }
+  .row.risk-none .badge { background: transparent; color: var(--text-dim); }
+  .row .detail { color: var(--text-dim); font-size: 12.5px; }
+
+  .row-head {
+    display: grid;
+    grid-template-columns: 28px 1fr 90px 130px 1fr;
+    gap: 14px;
+    padding: 0 16px;
+    color: var(--text-dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Loading overlay */
+  #loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,14,15,0.97);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 999;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #loading-overlay.active { display: flex; }
+  .loading-box { text-align: center; max-width: 360px; padding: 0 20px; }
+  .spinner {
+    width: 34px; height: 34px;
+    border: 3px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    margin: 0 auto 22px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-step { color: var(--text); font-size: 13.5px; min-height: 20px; margin-bottom: 8px; }
+  .loading-sub { color: var(--text-dim); font-size: 11.5px; }
+  .loading-cursor {
+    display: inline-block; width: 7px; height: 13px;
+    background: var(--green); margin-left: 2px;
+    animation: blink 1s step-end infinite; vertical-align: middle;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Review page specific */
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .star-rating input { display: none; }
+  .star-rating label {
+    font-size: 26px;
+    color: var(--border);
+    cursor: pointer;
+    transition: color 0.1s;
+  }
+  .star-rating label:hover,
+  .star-rating label:hover ~ label,
+  .star-rating input:checked ~ label {
+    color: var(--amber);
+  }
+  .review-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 40px;
+  }
+  .review-form label.field-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .review-form input[type="text"], .review-form textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+    resize: vertical;
+  }
+  .review-form textarea { min-height: 90px; }
+  .review-form input:focus, .review-form textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  .review-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .review-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .review-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 13.5px;
+  }
+  .review-stars { color: var(--amber); font-size: 14px; letter-spacing: 1px; }
+  .review-date { color: var(--text-dim); font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+  .review-text { color: var(--text); font-size: 13.5px; line-height: 1.55; }
+
+  @media (max-width: 600px) {
+    .row, .row-head { grid-template-columns: 20px 1fr 70px; }
+    .row .age, .row-head .age-h, .row .detail, .row-head .detail-h { display: none; }
+    .nav-links { gap: 14px; }
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="/" class="nav-brand">
+      <span class="dot"></span>
+      <span class="name">typosquat<span>// domain finder</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="{% if active_page == 'scanner' %}active{% endif %}">scanner</a>
+      <a href="/reviews" class="{% if active_page == 'reviews' %}active{% endif %}">reviews</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  {% block content %}{% endblock %}
+  <footer>built for cybersecurity internship project — typosquatting detection tool</footer>
+</div>
+
+{% block extra_body %}{% endblock %}
+</body>
+</html>
